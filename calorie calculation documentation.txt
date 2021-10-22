@@ -1,0 +1,40 @@
+description -> dbo.food
+dbo.food.fdc_id ->dbo.food_nutrient_conversion_factor
+dbo.food_nutrient_conversion_factor.id -> dbo.food_calorie_conversion_factor  (protein, fat, carbohydrate) (conversion factor for calories)
+
+description ->dbo.food
+dbo.food.fdc_id -> dbo.food_nutrient
+dbo.food_nutrient.nutrient_id = 1003, 1004, 1005 -> protein, fat, carbohydrate (amount)
+
+
+nutrient_id
+protein = 1003
+fat = 1004
+carbohydrate = 1005
+
+
+calories = (protein, fat, carbohydrate) *(food_nutrient_conversion_factor)
+
+onion = protein 1.1, fat .1, carbohydrate 9.34 (amount)  fdc_id = 170,000
+
+conversion = 2.78 8.37 3.84 (protein, fat, carbohydrate)
+
+
+
+protein, fat, carbohydrate (calories)
+result = 4.4 0.9  37.3  (4-9-4) = 42.6
+
+result = 3.058 0.837 35.8656 (2.78-8.37-3.84) = 39.7606
+
+official number = 40
+
+
+Potatoes, boiled, cooked in skin, flesh, without salt fdc_id = 170438
+
+value = protein 1.87, fat .1, carbohydrate 20.13
+
+conversion = 2.78 8.37 4.03
+
+result = 5.198 0.837 81.239 = 87.1589
+
+official number = 87
