@@ -10,15 +10,14 @@ import itertools
 
 # Create your models here.
 class Recipe(models.Model):
-    id = models.AutoField
     title = models.CharField(max_length = 120)
     description = models.TextField()
     def __str__(self) -> str:
-        return self.title
+        return str(self.id) +" "+self.title
     def save(self, *args, **kwargs):
         saved_recipe = super().save(*args, **kwargs)
         DetailedRecipe().save( desc = self.description, origin = self)
-        return saved_recipe
+        return saved_recipe 
 
 
 class DetailedRecipe(models.Model):
@@ -29,22 +28,39 @@ class DetailedRecipe(models.Model):
     def __str__(self) -> str:
         return self.ingredients_list
 
-    def save(self, desc,origin, *args, **kwargs):
+    def save(self, desc,origin:Recipe, *args, **kwargs):
+        logging.warning("saving recipe for origin: "+origin.__str__())
         self.origin_id = origin
         self.ingredients_list = desc
-
+        #saved_recipe = super().save(force_insert= True)
         for ingredient in  single_ingredients(self.ingredients_list):
             weight = get_weight(ingredient)#remove weight into separate value
             try:
                 fdc_id = get_fdc_id_from_description(get_ingredient_from_database(remove_weight(ingredient)))
                 ingredient_calories = CalculateCalories(str(fdc_id),weight)
                 self.calories += ingredient_calories
+                DetailedRecipeCalorieContributions().save(origin,ingredient = ingredient, calories = ingredient_calories)
                 logging.warning("Calories from %s: %i", ingredient, ingredient_calories)
             except NoSuchEntryError:
-                logging.warning("No database match found for %s, no calories derived from that ingredient.", ingredient)
+                logging.error("No database match found for %s, no calories derived from that ingredient.", ingredient)
                 pass
         saved_recipe = super().save(force_insert= True)
         return saved_recipe
+
+class DetailedRecipeCalorieContributions(models.Model):
+    
+    parent_recipe_id = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.TextField()
+    calories = models.IntegerField()
+
+    def __str__(self) -> str:
+        return "ID: "+str(self.id)+" Parent:"+str(self.parent_recipe_id)
+    def save(self, origin,ingredient, calories,*args, **kwargs):
+        self.parent_recipe_id = origin
+        self.ingredient = ingredient
+        self.calories = calories
+        return super().save()
+
 
 class NoSuchEntryError(Exception):
     def __init__(self,input_string,error_string = "ERROR: No matching entry found in database for "):
@@ -90,7 +106,7 @@ def single_ingredients(ingredient_list):
 #wrapper for get_matching_ingredients_from_database, chooses closest match
 def get_ingredient_from_database(ingredient:str):
     result = closest_str(ingredient, get_matching_ingredients_from_database(ingredient))
-    logging.warning("Closest match to %s chosesn as %s",ingredient,result)
+    logging.warning("Closest match to %s chosen as %s",ingredient,result)
     return result
 
 #expects ingredient components to be separated by spaces or commas. Returns list of tuples (description, fdc_id)
@@ -124,16 +140,42 @@ def get_matching_ingredients_from_database(ingredient:str):
         logging.warning("combinations input = "+str(component_list))
         while (results is None or results == []) and i<len(possible_combinations):     #TODO: Change to breadth first rather than depth first. EX "pork" "cheeks" "cleaned" goes to "cleaned" to "cleaned shrimp", should go to "pork" "cheek" first
             logging.warning(possible_combinations[i])
-            
-            if len(list(possible_combinations[i])) >1:
-                results = get_matching_ingredients_from_database(' '.join(list(possible_combinations[i])))
-            else: 
-                results = get_matching_ingredients_from_database(list(possible_combinations[i])[0])
+            results_list = []
+            for combo in possible_combinations:
+                if len(list(possible_combinations[i])) >1:
+                    results_list.append( get_matching_ingredients_from_database_single_depth(' '.join(list(combo))))
+                else: 
+                    results_list.append( get_matching_ingredients_from_database_single_depth(list(combo)[0]))
+            for res_list in results_list:
+                for result in res_list:
+                    results.append(result)
             i = i+1
             possible_combinations = list(itertools.combinations(component_list,len(component_list)-i))
     if results is None or results == []:
         raise NoSuchEntryError(ingredient)
     return results
+
+def get_matching_ingredients_from_database_single_depth(ingredient:str):
+    if ingredient =='':
+        raise NoSuchEntryError("Ingredient reduced to 0 length with no matches")
+    component_list = re.split(' |,',ingredient)
+    while '' in component_list:
+        component_list.remove('')
+    contains_query = ''
+    first = True
+    for component in component_list:
+        if first:
+            contains_query += "description LIKE '%"+component+"%'"#" contains(description, '"+component+"')"
+            first = False
+        else:
+            contains_query += "AND description LIKE '%"+component+"%'"#"AND contains(description, '"+component+"')"
+    with connection.cursor() as cursor:
+        query = 'SELECT TOP (1000) description, fdc_id FROM dbo.food WHERE '+contains_query+' ORDER BY len(description) ASC'
+        logging.warning(query)
+        cursor.execute(query)
+        results = cursor.fetchall()
+    return results
+
 
 #gets the conversion factor tuple (convertable calories per gram of protein,fat,carbs)
 def calorie_conversion_factor(ingredient_fdc_id):     
@@ -163,7 +205,7 @@ def nutrient_gram_amounts(ingredient_fdc_id):  #nutriend id EITHER = 1003,1004,1
         logging.warning("List of nutrient amounts (protein, fat, carbs)(1003,1004,1005):"+nutrient_amounts.__str__())
         if(nutrient_amounts[0] is None):
             nutrient_amounts = []
-            cursor.execute('SELECT amount FROM dbo.food_nutrient WHERE fdc_id = %s AND nutrient_id = 203',(ingredient_fdc_id,))  #protein = 1003, fat = 1004, carbohydrate = 1005 
+            cursor.execute('SELECT amount FROM dbo.food_nutrient WHERE fdc_id = %s AND nutrient_id = 203',(ingredient_fdc_id,))  #protein = 203, fat = 204, carbohydrate = 205 
             nutrient_amounts.append(cursor.fetchone())
             cursor.execute('SELECT amount FROM dbo.food_nutrient WHERE fdc_id = %s AND nutrient_id = 204',(ingredient_fdc_id,))
             nutrient_amounts.append(cursor.fetchone())
@@ -180,9 +222,11 @@ def CalculateCalories(ingredient_fdc_id, mass) ->int:
     carbs_factor =  float(conversion_factors[2])
 
     nutrient_amounts = nutrient_gram_amounts(ingredient_fdc_id)
-    protein_grams = float(nutrient_amounts[0][0])
-    fat_grams = float(nutrient_amounts[1][0])
-    carbs_grams = float(nutrient_amounts[2][0])
+    if None in nutrient_amounts: 
+        logging.warning("Selected ingredient with id "+ingredient_fdc_id+" has either no or missing information for protein/fat/carbs grams per 100g serving. Database information ="+str(nutrient_amounts))
+    protein_grams = float(nutrient_amounts[0][0]) if not nutrient_amounts[0] is None else 0
+    fat_grams = float(nutrient_amounts[1][0]) if not nutrient_amounts[1] is None else 0
+    carbs_grams = float(nutrient_amounts[2][0]) if not nutrient_amounts[2] is None else 0
     total_kCal = protein_factor*protein_grams + fat_factor * fat_grams + carbs_factor * carbs_grams
     total_kCal = total_kCal * (mass/100.0)
 

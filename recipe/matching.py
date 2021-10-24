@@ -2,7 +2,7 @@ from typing import Tuple
 import inspect
 import difflib
 
-common_terms = ("cooked","raw","boiled","salt","skin","peel","steamed","poached","smoked","baked","broiled","made","with","flesh","NFS","from","fresh","peel","made","with" )
+common_terms = ("cooked","raw","boiled","salt","skin","peel","steamed","poached","smoked","baked","broiled","made","with","flesh","NFS","from","fresh","peel", "cleaned" )
 
 def total_value(name:str, weight:float):
     return -1
