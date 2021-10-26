@@ -8,6 +8,9 @@ from recipe.matching import closest_str
 import re
 import itertools
 
+
+#like and contains in SQL require Full Text index on description column of dbo.food
+
 # Create your models here.
 class Recipe(models.Model):
     title = models.CharField(max_length = 120)
