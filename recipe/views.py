@@ -25,7 +25,7 @@ class DetailedRecipeView(viewsets.ReadOnlyModelViewSet):
 def calorie_contribution(recipe:WSGIRequest):
     return HttpResponse(get_ingredients((recipe.path.split('/')[-1])))
 
-def get_ingredients(recipe_id):
+def get_ingredients(recipe_id): #Format ingredients and masses for return to frontend
         with connection.cursor() as cursor:
             query = "SELECT * FROM dbo.recipe_detailedrecipecaloriecontributions WHERE parent_recipe_id_id = "+recipe_id
             cursor.execute(query)
