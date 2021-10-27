@@ -32,6 +32,8 @@ class DetailedRecipe(models.Model):
         return self.ingredients_list
 
     def save(self, desc,origin:Recipe, *args, **kwargs):
+        DetailedRecipeCalorieContributions.objects.filter(parent_recipe_id = origin).delete()
+        DetailedRecipe.objects.filter(origin_id = origin).delete()
         logging.warning("saving recipe for origin: "+origin.__str__())
         self.origin_id = origin
         self.ingredients_list = desc
@@ -141,7 +143,7 @@ def get_matching_ingredients_from_database(ingredient:str):
             j = j+1
         possible_combinations = list(itertools.combinations(component_list,len(component_list)-i))
         logging.warning("combinations input = "+str(component_list))
-        while (results is None or results == []) and i<len(possible_combinations):     #TODO: Change to breadth first rather than depth first. EX "pork" "cheeks" "cleaned" goes to "cleaned" to "cleaned shrimp", should go to "pork" "cheek" first
+        while (results is None or results == []) and i<len(possible_combinations):     
             logging.warning(possible_combinations[i])
             results_list = []
             for combo in possible_combinations:
