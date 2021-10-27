@@ -97,12 +97,9 @@ export class DetailedViewModal extends Component {
     console.log("title : "+this.state.activeItem.title)
     return (
       <Modal isOpen={true} toggle={toggle}>
-        <ModalHeader toggle={toggle}></ModalHeader>
+        <ModalHeader toggle={toggle} cssModule={{'modal-title': 'w-100 text-center'}}> <Label for="recipe-title"  >{this.state.activeItem.title}</Label></ModalHeader>
         <ModalBody>
           <Form>
-            <FormGroup>
-              <Label for="recipe-title"  >{this.state.activeItem.title}</Label>
-            </FormGroup>
             <FormGroup>
               <Label for="recipe-description">Ingredients</Label>
               <Input
@@ -110,8 +107,10 @@ export class DetailedViewModal extends Component {
                 id="recipe-description"
                 name="description"
                 value={this.state.activeItem.description}
+                rows = "5"
                 readOnly
               />
+
             </FormGroup>
               <Chart   //shamelessly stolen from https://react-google-charts.com/
                 width={'350px'}
@@ -121,6 +120,7 @@ export class DetailedViewModal extends Component {
                 data={this.state.chartData}
                 options={{
                 title: 'Calorie Breakdown',
+                pieSliceText: 'value',
               }}
               rootProps={{ 'data-testid': '1' }}
             />

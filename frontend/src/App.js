@@ -95,7 +95,7 @@ class App extends Component {
   viewItem = (item) => {
     
     axios
-      .get(`/api2/calorie_contribution/${item.id}`)
+      .get(`/api/calorie_contribution/${item.id}`)
       .then((res) => this.setState({ingredientInfo: res.data}))
       .then(() => this.setState({chartData : this.processIngredientInfo(this.state.ingredientInfo)}))
       .catch((err) => console.log(err))
