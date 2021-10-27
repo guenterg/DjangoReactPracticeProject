@@ -92,9 +92,19 @@ export class DetailedViewModal extends Component {
     
   }
 
+  makeChartTitle() {
+    var total;
+    for(const entry of this.state.chartData){
+      console.log(entry[1])
+      total  = (total || 0) + parseInt(entry[1])
+    }
+    return "Calorie Breakdown: "+ total + " Calories Total";
+  }
+  
   render() {
     const { toggle} = this.props;
     console.log("title : "+this.state.activeItem.title)
+    const chartTitle = this.makeChartTitle();
     return (
       <Modal isOpen={true} toggle={toggle}>
         <ModalHeader toggle={toggle} cssModule={{'modal-title': 'w-100 text-center'}}> <Label for="recipe-title"  >{this.state.activeItem.title}</Label></ModalHeader>
@@ -119,7 +129,7 @@ export class DetailedViewModal extends Component {
                 loader={<div>Loading Chart</div>}
                 data={this.state.chartData}
                 options={{
-                title: 'Calorie Breakdown',
+                title: chartTitle,
                 pieSliceText: 'value',
               }}
               rootProps={{ 'data-testid': '1' }}
