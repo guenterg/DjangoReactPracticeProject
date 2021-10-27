@@ -1,4 +1,5 @@
 from django.contrib import admin
+import logging
 from .models import DetailedRecipe, DetailedRecipeCalorieContributions, Recipe
 
 class RecipeAdmin(admin.ModelAdmin):
@@ -6,6 +7,8 @@ class RecipeAdmin(admin.ModelAdmin):
 
 class DetailedRecipeAdmin(admin.ModelAdmin):
     list_display = ("origin_id",)
+
+
 
 class DetailedRecipeCalorieContributionsAdmin(admin.ModelAdmin):
     list_display= ('parent_recipe_id','ingredient','calories')
