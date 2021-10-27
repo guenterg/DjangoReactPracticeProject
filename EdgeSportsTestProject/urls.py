@@ -25,7 +25,7 @@ router.register(r'detailedrecipes',views.DetailedRecipeView,'recipe')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path(r'^api\/calorie_contribution\/[\S|\s]*', views.calorie_contribution),
+    re_path(r'^api\/calorie_contribution\/[\S|\s]{0,10}', views.calorie_contribution),
     path('api/', include(router.urls))
     
 ]
