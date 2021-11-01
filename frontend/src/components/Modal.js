@@ -61,7 +61,7 @@ export class SaveEditModal extends Component {
                 value={this.state.activeItem.description}
                 onChange={this.handleChange}
                 placeholder="Enter Recipe ingredients in format below
-                weights should be in US ounces or grams
+                weights should be in grams  (ex. 215g)
                 &quot; ingredient name, weight of ingredient &quot; 
                 One line per ingredient."
               />
